@@ -1,14 +1,13 @@
  (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
 diff --git a/src/components/habit-dashboard.tsx b/src/components/habit-dashboard.tsx
-index a135d548cb9bd0181cbbb8a2a1743016f2c797e2..f8a01d0f5e65896bdd57a8623657105198d2e3c6 100644
+index a135d548cb9bd0181cbbb8a2a1743016f2c797e2..41c89ffffa4221893df3095586a1fef48a30803b 100644
 --- a/src/components/habit-dashboard.tsx
 +++ b/src/components/habit-dashboard.tsx
-@@ -1,29 +1,29 @@
+@@ -1,112 +1,113 @@
  
  "use client";
  
--import { useState, useEffect } from 'react';
-+import { useState, useEffect, useMemo } from 'react';
+ import { useState, useEffect } from 'react';
  import { DailyLog } from '@/components/daily-log';
  import { WeeklySummary } from '@/components/weekly-summary';
  import { Button } from '@/components/ui/button';
@@ -17,6 +16,7 @@ index a135d548cb9bd0181cbbb8a2a1743016f2c797e2..f8a01d0f5e65896bdd57a86236571051
  import { it } from 'date-fns/locale';
  import { cn } from '@/lib/utils';
  import type { SignupData } from './login-form';
++import type { LogType } from '@/lib/log-mappings';
  import Link from 'next/link';
  import { auth, db } from '@/lib/firebase';
  import { collection, query, onSnapshot, orderBy, doc, updateDoc, Timestamp } from 'firebase/firestore';
@@ -34,11 +34,69 @@ index a135d548cb9bd0181cbbb8a2a1743016f2c797e2..f8a01d0f5e65896bdd57a86236571051
              stroke="currentColor"
              strokeWidth="2"
              strokeLinecap="round"
-diff --git a/src/components/habit-dashboard.tsx b/src/components/habit-dashboard.tsx
-index a135d548cb9bd0181cbbb8a2a1743016f2c797e2..f8a01d0f5e65896bdd57a8623657105198d2e3c6 100644
---- a/src/components/habit-dashboard.tsx
-+++ b/src/components/habit-dashboard.tsx
-@@ -89,51 +89,54 @@ export function HabitDashboard({ userData, onLogout }: HabitDashboardProps) {
+             strokeLinejoin="round"
+         >
+             <path d="M12 1a3 3 0 0 0-3 3v2" />
+             <path d="M12 1a3 3 0 0 1 3 3v2" />
+             <path d="M12 22a3 3 0 0 0 3-3v-2" />
+             <path d="M12 22a3 3 0 0 1-3-3v-2" />
+             <path d="M21 12a3 3 0 0 0-3-3h-2" />
+             <path d="M3 12a3 3 0 0 1 3-3h2" />
+             <path d="M21 12a3 3 0 0 1-3 3h-2" />
+             <path d="M3 12a3 3 0 0 0 3 3h2" />
+             <path d="M12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12z" />
+         </svg>
+     )
+ }
+ 
+ export type LogEntry = {
+   id: string; // Firestore document ID
+-  type: string;
++  type: LogType;
+   description: string;
+   timestamp: Date;
+   value?: number;
+   category: 'Abitudine' | 'Compito';
+-  iconName: string; 
++  iconName: LogType;
+   color: string;
+ };
+ 
+ interface HabitDashboardProps {
+     userData: SignupData;
+     onLogout: () => void;
+ }
+ 
+ export function HabitDashboard({ userData, onLogout }: HabitDashboardProps) {
+   const [logEntries, setLogEntries] = useState<LogEntry[]>([]);
+   const [selectedDate, setSelectedDate] = useState(new Date());
+   const [loading, setLoading] = useState(true);
+ 
+   useEffect(() => {
+     const currentUser = auth.currentUser;
+     if (!currentUser) {
+         setLoading(false);
+         return;
+     };
+ 
+     const logEntriesCollection = collection(db, 'users', currentUser.uid, 'logEntries');
+     const q = query(logEntriesCollection, orderBy('timestamp', 'desc'));
+ 
+     const unsubscribe = onSnapshot(q, (querySnapshot) => {
+         const entries: LogEntry[] = [];
+         querySnapshot.forEach((doc) => {
+             const data = doc.data();
+             entries.push({
+                 id: doc.id,
+-                type: data.type,
++                type: data.type as LogType,
+                 description: data.description,
+                 timestamp: (data.timestamp as Timestamp).toDate(),
+                 value: data.value,
+                 category: data.category,
+-                iconName: data.iconName,
++                iconName: data.iconName as LogType,
+                 color: data.color,
              });
          });
          setLogEntries(entries);
@@ -63,37 +121,6 @@ index a135d548cb9bd0181cbbb8a2a1743016f2c797e2..f8a01d0f5e65896bdd57a86236571051
          console.error("Error updating timestamp: ", error);
      }
    };
-   
--  const dates = Array.from({ length: 10 }).map((_, i) => addDays(new Date(), i - 5));
-+  const dates = useMemo(
-+    () => Array.from({ length: 10 }).map((_, i) => addDays(new Date(), i - 5)),
-+    []
-+  );
- 
-   const filteredLogEntries = logEntries.filter(entry => isSameDay(new Date(entry.timestamp), selectedDate));
- 
-   return (
-     <div className="flex min-h-screen w-full flex-col bg-background text-foreground">
-       <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-4 border-b border-border/20 bg-background/95 px-4 backdrop-blur-sm md:px-6">
-         <div className="flex items-center gap-4">
-           <Button variant="ghost" size="icon">
-             <Menu className="h-6 w-6" />
-           </Button>
-           <h1 className="text-2xl font-bold">Oggi</h1>
-         </div>
-         <div className="flex items-center gap-2">
-           <Button variant="ghost" size="icon">
-             <Search className="h-5 w-5" />
-           </Button>
-           <Button variant="ghost" size="icon">
-             <Calendar className="h-5 w-5" />
-           </Button>
-            <Button variant="ghost" size="icon" onClick={onLogout}>
-             <HelpCircle className="h-5 w-5" />
-           </Button>
-         </div>
-       </header>
- 
  
 EOF
 )
