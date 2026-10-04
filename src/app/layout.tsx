@@ -1,40 +1,31 @@
+import type { Metadata, Viewport } from "next";
+import "./globals.css";
 
-import type {Metadata} from 'next';
-import './globals.css';
-import { Toaster } from '@/components/ui/toaster';
-import Script from 'next/script';
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.daviderossi.it";
 
 export const metadata: Metadata = {
-  title: 'LifeFlow',
-  description: 'Track your habits and lifestyle to analyze your progress.',
+  metadataBase: new URL(siteUrl),
+  title: { default: "Davide Rossi | Digital Strategist & Web Developer", template: "%s | Davide Rossi" },
+  description: "Freelance esperto in digital advertising, landing page, sviluppo web, vibe coding, analytics e strategie di marketing.",
+  keywords: ["digital strategist", "freelance marketing", "sviluppo landing page", "web developer", "vibe coding", "web analytics", "consulente marketing"],
+  authors: [{ name: "Davide Rossi" }],
+  creator: "Davide Rossi",
+  robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 } },
+  openGraph: {
+    type: "website", locale: "it_IT", url: siteUrl,
+    title: "Davide Rossi | Digital Strategist & Web Developer",
+    description: "Strategia, design e tecnologia per far crescere idee ambiziose.",
+    siteName: "Davide Rossi",
+  },
+  twitter: { card: "summary_large_image", title: "Davide Rossi | Digital Strategist", description: "Strategia, design e tecnologia per far crescere idee ambiziose." },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  return (
-    <html lang="en" suppressHydrationWarning className="dark">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
-      </head>
-      <Script async src="https://www.googletagmanager.com/gtag/js?id=G-CYM9GL2Q9D"></Script>
-      <Script id="google-analytics">
-        {`
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#f4ff48" };
 
-          gtag('config', 'G-CYM9GL2Q9D');
-        `}
-      </Script>
-      <body className="font-body antialiased bg-background text-foreground">
-        {children}
-        <Toaster />
-      </body>
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  return (
+    <html lang="it">
+      <body>{children}</body>
     </html>
   );
 }
